@@ -76,14 +76,14 @@ class Cell():
     def collide_check(self, player):
         global cells, bots, game_over
         for cell in cells:
-            if math.sqrt(((player.x_pos - (WIDTH / 2) + cell.x_pos) ** 2 + (player.y_pos - (HEIGHT / 2) + cell.y_pos) ** 2)) <= cell.radius + player.radius and cell.radius <= player.radius:
+            if math.sqrt((player.x_pos - (WIDTH / 2) + cell.x_pos) ** 2 + (player.y_pos - (HEIGHT / 2) + cell.y_pos) ** 2) <= cell.radius + player.radius and cell.radius <= player.radius:
                 cells.remove(cell)
                 player.radius += 0.25
                 if respawn_cells:
                     new_cell = Cell(random.randint(-map_size, map_size), random.randint(-map_size, map_size), (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)), 5, "Cell")
                     cells.append(new_cell)
         for bot in bots:
-            if math.sqrt(((player.x_pos - (WIDTH / 2) + bot.x_pos) ** 2 + (player.y_pos - (HEIGHT / 2) + bot.y_pos) ** 2)) <= player.radius and bot.radius * 1.1 <= player.radius:
+            if math.sqrt((player.x_pos - (WIDTH / 2) + bot.x_pos) ** 2 + (player.y_pos - (HEIGHT / 2) + bot.y_pos) ** 2) <= player.radius and bot.radius * 1.1 <= player.radius:
                 bot_area = math.pi * (bot.radius ** 2)
                 player_area = math.pi * (player.radius ** 2)
                 new_area = bot_area + player_area
@@ -93,7 +93,7 @@ class Cell():
                 if respawn_bots:
                     new_bot = Cell(random.randint(-map_size, map_size), random.randint(-map_size, map_size), (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)), random.randint(25, 250), "Bot")
                     bots.append(new_bot)
-            elif math.sqrt(((player.x_pos - (WIDTH / 2) + bot.x_pos) ** 2 + (player.y_pos - (HEIGHT / 2) + bot.y_pos) ** 2)) <= bot.radius and bot.radius >= player.radius * 1.1 and not game_over:
+            elif math.sqrt((player.x_pos - (WIDTH / 2) + bot.x_pos) ** 2 + (player.y_pos - (HEIGHT / 2) + bot.y_pos) ** 2) <= bot.radius and bot.radius >= player.radius * 1.1 and not game_over:
                 bot_area = math.pi * (bot.radius ** 2)
                 player_area = math.pi * (player.radius ** 2)
                 new_area = bot_area + player_area
@@ -102,7 +102,7 @@ class Cell():
                 game_over = True
             else:
                 for collide_bot in bots:
-                    if math.sqrt(((collide_bot.x_pos - bot.x_pos) ** 2 + (collide_bot.y_pos - bot.y_pos) ** 2)) <= bot.radius and bot.radius >= collide_bot.radius * 1.1:
+                    if math.sqrt((collide_bot.x_pos - bot.x_pos) ** 2 + (collide_bot.y_pos - bot.y_pos) ** 2) <= bot.radius and bot.radius >= collide_bot.radius * 1.1:
                         bots.remove(collide_bot)
                         bot_area = math.pi * (bot.radius ** 2)
                         collide_bot_area = math.pi * (collide_bot.radius ** 2)
@@ -113,7 +113,7 @@ class Cell():
                             new_bot = Cell(random.randint(-map_size, map_size), random.randint(-map_size, map_size), (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)), random.randint(25, 250), "Bot")
                             bots.append(new_bot)
                 for cell in cells:
-                    if math.sqrt(((bot.x_pos - cell.x_pos) ** 2 + (bot.y_pos - cell.y_pos) ** 2)) <= cell.radius + bot.radius and cell.radius <= bot.radius:
+                    if math.sqrt((bot.x_pos - cell.x_pos) ** 2 + (bot.y_pos - cell.y_pos) ** 2) <= cell.radius + bot.radius and cell.radius <= bot.radius:
                         cells.remove(cell)
                         bot.radius += 0.25
                         if respawn_cells:
@@ -189,9 +189,11 @@ while True:
         SCREEN.blit(text, ((WIDTH / 2) - 150, (HEIGHT / 2) - 40))
     else:
         player_cell.draw(SCREEN, (WIDTH / 2), (HEIGHT / 2))
+        if player_cell.radius > 25:
+            player_cell.radius -= 0.0025
     
     # DRAWING THE MASS TO THE SCREEN
-    text = FONT.render("Mass: " + str(round(player_cell.radius)), False, text_color)
+    text = FONT.render("Mass: " + str(round(player_cell.radius, 1)), False, text_color)
     SCREEN.blit(text, (20, 20))
     
     # CALCULATING FPS
