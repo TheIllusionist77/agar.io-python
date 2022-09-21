@@ -88,7 +88,7 @@ class Cell():
                 player_area = math.pi * (player.radius ** 2)
                 new_area = bot_area + player_area
                 new_radius = math.sqrt(new_area / math.pi)
-                player.radius += new_radius - player.radius
+                player.radius = new_radius
                 bots.remove(bot)
                 if respawn_bots:
                     new_bot = Cell(random.randint(-map_size, map_size), random.randint(-map_size, map_size), (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)), random.randint(25, 250), "Bot")
@@ -98,7 +98,7 @@ class Cell():
                 player_area = math.pi * (player.radius ** 2)
                 new_area = bot_area + player_area
                 new_radius = math.sqrt(new_area / math.pi)
-                bot.radius += new_radius - bot.radius
+                bot.radius = new_radius
                 game_over = True
             else:
                 for collide_bot in bots:
@@ -108,7 +108,7 @@ class Cell():
                         collide_bot_area = math.pi * (collide_bot.radius ** 2)
                         new_area = bot_area + collide_bot_area
                         new_radius = math.sqrt(new_area / math.pi)
-                        bot.radius += new_radius - bot.radius
+                        bot.radius = new_radius
                         if respawn_bots:
                             new_bot = Cell(random.randint(-map_size, map_size), random.randint(-map_size, map_size), (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)), random.randint(25, 250), "Bot")
                             bots.append(new_bot)
