@@ -4,7 +4,7 @@ import socket, random, math, threading
 # GETTING HOST IP
 n = socket.gethostname()
 ip = socket.gethostbyname(n)
-print("Connect to IP " + str(ip) + " to play!")
+print("[SERVER] Server has opened successfully with address " + str(ip) + ".")
 
 # VARIABLES THAT CAN BE CHANGED
 PORT = 65432
@@ -55,6 +55,11 @@ class Cell():
             player = player_dict[player]
             if player.name == "Player" and player.username != self.username and math.sqrt((self.x_pos - player.x_pos) ** 2 + (self.y_pos - player.y_pos) ** 2) <= player.radius / 5 + self.radius / 5 and player.radius / 5 >= self.radius / 5 * 1.1:
                 self.eaten = True
+                player_area = math.pi * (player.radius ** 2)
+                self_area = math.pi * (self.radius ** 2)
+                new_area = self_area + player_area
+                new_radius = math.sqrt(new_area / math.pi)
+                player.radius = new_radius
             
 # SPAWNING EVERY CELL
 for i in range(cell_count):
@@ -78,10 +83,12 @@ def Server():
 
                 # CHECKING IF PLAYER IS NEW OR EXISTING
                 if len(data) == 6:
+                    print("[PLAYERS] New player with userame " + str(data[0]) + " has joined!")
                     cell = Cell(int(data[4]), int(data[5]), (int(data[1]), int(data[2]), int(data[3])), spawn_size, "Player", data[0])
                     keys.append(data[0])
                     player_dict[str(data[0])] = cell
                 elif "END_CONNECTION" in str(data[0]):
+                    print("[PLAYERS] Player with username " + str(data[1]) + " has left...")
                     player_dict.pop(str(data[1]))
                 else:
                     cell = player_dict[data[2]]
@@ -99,13 +106,21 @@ def Server():
                             elif cell.x_pos <= 0:
                                 cell.x_pos += 5
                             else:
-                                cell.x_pos += round(-((-int(data[0]) + 640) / cell.radius / 10))
+                                x_change = int(data[0])
+                                if x_change > 700:
+                                    cell.x_pos += 1
+                                elif x_change < 580:
+                                    cell.x_pos -= 1
                             if cell.y_pos >= 720:
                                 cell.y_pos -= 5
                             elif cell.y_pos <= 0:
                                 cell.y_pos += 5
                             else:
-                                cell.y_pos += round(-((-int(data[1]) + 360) / cell.radius / 5))
+                                y_change = int(data[1])
+                                if y_change > 400:
+                                    cell.y_pos += 1
+                                elif y_change < 320:
+                                    cell.y_pos -= 1
                 
                 # ADDING EVERY PLAYER TO THE SEND LIST
                 for key in keys:
@@ -134,5 +149,5 @@ def Server():
 while True:
     try:
         threading.Thread(target = Server()).start()
-    except:
-        pass
+    except Exception as e:
+        print("[WARNING] Something special has occured: " + str(e))
