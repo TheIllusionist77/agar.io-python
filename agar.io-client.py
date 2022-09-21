@@ -27,42 +27,47 @@ frame_rate_delay = 0.5
 droppedFrames = 0
 playerRadius = 25
 username = ""
+player_data = ""
             
 # PARSER FUNCTION
 def parser(cell_strings, surface):
-    global username, playerRadius
-    temp_string = ""
-    master_strings = []
-    for character in cell_strings:
-        if character != "/":
-            temp_string += str(character)
-        else:
-            master_strings.append(temp_string)
-            temp_string = ""
-    temp_string = ""
-    for cell_string in master_strings:
-        string_list = []
-        for character in cell_string:
-            if character != ":":
+    if player_data == "":
+        text = FONT.render("Something went wrong, please reconnect.", False, (255, 55, 55))
+        SCREEN.blit(text, (320, 320))
+    else:
+        global username, playerRadius
+        temp_string = ""
+        master_strings = []
+        for character in cell_strings:
+            if character != "/":
                 temp_string += str(character)
             else:
-                string_list.append(temp_string)
+                master_strings.append(temp_string)
                 temp_string = ""
-        temp_radius = float(string_list[0])
-        temp_r = int(string_list[1])
-        temp_g = int(string_list[2])
-        temp_b = int(string_list[3])
-        temp_x = int(string_list[4])
-        temp_y = int(string_list[5])
-        temp_username = string_list[6]
-        if temp_username == username:
-            playerRadius = temp_radius
-        if temp_username != "None":
-            pygame.draw.circle(surface, (temp_r, temp_g, temp_b), (temp_x, temp_y), int(temp_radius / 5))
-            text = TINYFONT.render(str(temp_username), False, text_color)
-            SCREEN.blit(text, (temp_x - 27.5, temp_y - 7.5))
-        else:
-            pygame.draw.circle(surface, (temp_r, temp_g, temp_b), (temp_x, temp_y), int(temp_radius / 5))
+        temp_string = ""
+        for cell_string in master_strings:
+            string_list = []
+            for character in cell_string:
+                if character != ":":
+                    temp_string += str(character)
+                else:
+                    string_list.append(temp_string)
+                    temp_string = ""
+            temp_radius = float(string_list[0])
+            temp_r = int(string_list[1])
+            temp_g = int(string_list[2])
+            temp_b = int(string_list[3])
+            temp_x = int(string_list[4])
+            temp_y = int(string_list[5])
+            temp_username = string_list[6]
+            if temp_username == username:
+                playerRadius = temp_radius
+            if temp_username != "None":
+                pygame.draw.circle(surface, (temp_r, temp_g, temp_b), (temp_x, temp_y), int(temp_radius / 5))
+                text = TINYFONT.render(str(temp_username), False, text_color)
+                SCREEN.blit(text, (temp_x - 27.5, temp_y - 7.5))
+            else:
+                pygame.draw.circle(surface, (temp_r, temp_g, temp_b), (temp_x, temp_y), int(temp_radius / 5))
 
 # FUNCTION THAT SENDS DATA TO THE SERVER
 def send_to_server(message):
@@ -80,10 +85,14 @@ def send_to_server(message):
         return "GAME_OVER"
     return str(data.decode())
 
+# GETTING READY TO CONNECT TO THE SERVER AND START THE GAME
 while len(username) < 4 or len(username) > 8:
     username = input("Enter your username: ")
     if len(username) < 4 or len(username) > 8:
         print("Your username must be at least 4 and at most 8 letters long!")
+        
+parser(player_data, SCREEN)
+pygame.display.update()
         
 send_to_server(str(username) + ":" + str(random.randint(0, 255)) + ":" + str(random.randint(0, 255)) + ":" + str(random.randint(0, 255)) + ":" + str(random.randint(0, 1280)) + ":" + str(random.randint(0, 720)) + ":")
   
@@ -103,13 +112,17 @@ while True:
             mouse_y = 360
     
     # COMMUNICATING WITH SERVER IF GAME IS RUNNING
-    if not game_over:       
-        player_data = send_to_server(str(mouse_x) + ":" + str(mouse_y) + ":" + str(username) + ":")
+    if not game_over:
+        server_data = send_to_server(str(mouse_x) + ":" + str(mouse_y) + ":" + str(username) + ":")
     
-        if player_data != False:
+        if server_data != False:
+            player_data = server_data
             parser(player_data, SCREEN)
+            disconnected = False
         else:
+            parser(player_data, SCREEN)
             droppedFrames += 1
+            disconnected = True
     
         if player_data == "GAME_OVER":
             game_over = True
@@ -125,7 +138,29 @@ while True:
     
     # PUTTING THE AMOUNT OF DROPPED FRAMES ON THE SCREEN
     text = TINYFONT.render("Dropped Frames: " + str(droppedFrames), False, text_color)
-    SCREEN.blit(text, (20, 100))
+    SCREEN.blit(text, (20, 640))
+    if droppedFrames <= 50:
+        text = TINYFONT.render("Your connection is stable", False, (55, 255, 55))
+        SCREEN.blit(text, (20, 660))
+    elif droppedFrames <= 100:
+        text = TINYFONT.render("Your connection is slightly unstable", False, (155, 255, 55))
+        SCREEN.blit(text, (20, 660))
+    elif droppedFrames <= 300:
+        text = TINYFONT.render("Your connection is unstable, dropped framerate", False, (255, 155, 55))
+        SCREEN.blit(text, (20, 660))
+        FPS = 12
+    else:
+        text = TINYFONT.render("Your connection is very unstable, dropped framerate further", False, (255, 55, 55))
+        SCREEN.blit(text, (20, 660))
+        FPS = 8
+    
+    # PUTTING THE CONNECTION STATUS ON THE SCREEN
+    if disconnected == False:
+        text = TINYFONT.render("Connected to server", False, (55, 255, 55))
+        SCREEN.blit(text, (20, 680))
+    else:
+        text = TINYFONT.render("Failed to connect to server", False, (255, 55, 55))
+        SCREEN.blit(text, (20, 680))
     
     # CALCULATING FPS
     counter += 1
