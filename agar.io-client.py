@@ -1,5 +1,5 @@
 # IMPORTING AND INITIALIZING NECCESARY MODULES
-import pygame, sys, random, math, time, socket
+import pygame, sys, random, time, socket
 from pygame.locals import *
 pygame.init()
 
@@ -25,6 +25,8 @@ frame_rate = 30
 start_time = 0
 frame_rate_delay = 0.5
 droppedFrames = 0
+server_uptime = 0
+ping = 0
 playerRadius = 25
 username = ""
 player_data = ""
@@ -35,12 +37,24 @@ def parser(cell_strings, surface):
         text = FONT.render("Something went wrong, please reconnect.", False, (255, 55, 55))
         SCREEN.blit(text, (320, 320))
     else:
-        global username, playerRadius
+        global username, playerRadius, server_uptime
         temp_string = ""
         master_strings = []
         for character in cell_strings:
             if character != "/":
-                temp_string += str(character)
+                if character == "-":
+                    try:
+                        seconds = int(temp_string)
+                        minutes = divmod(seconds, 60)[0]
+                        seconds = divmod(seconds, 60)[1]
+                        hours = divmod(minutes, 60)[0]
+                        minutes = divmod(minutes, 60)[1]
+                        server_uptime = str(int(hours)) + "h:" + str(int(minutes)) + "m:" + str(int(seconds)) + "s"
+                    except ValueError:
+                        pass
+                    temp_string = ""
+                else:
+                    temp_string += str(character)
             else:
                 master_strings.append(temp_string)
                 temp_string = ""
@@ -53,25 +67,30 @@ def parser(cell_strings, surface):
                 else:
                     string_list.append(temp_string)
                     temp_string = ""
-            temp_radius = float(string_list[0])
-            temp_r = int(string_list[1])
-            temp_g = int(string_list[2])
-            temp_b = int(string_list[3])
-            temp_x = int(string_list[4])
-            temp_y = int(string_list[5])
-            temp_username = string_list[6]
-            if temp_username == username:
-                playerRadius = temp_radius
-            if temp_username != "None":
-                pygame.draw.circle(surface, (temp_r, temp_g, temp_b), (temp_x, temp_y), int(temp_radius / 5))
-                text = TINYFONT.render(str(temp_username), False, text_color)
-                SCREEN.blit(text, (temp_x - 27.5, temp_y - 7.5))
-            else:
-                pygame.draw.circle(surface, (temp_r, temp_g, temp_b), (temp_x, temp_y), int(temp_radius / 5))
+            try:
+                temp_radius = float(string_list[0])
+                temp_r = int(string_list[1])
+                temp_g = int(string_list[2])
+                temp_b = int(string_list[3])
+                temp_x = int(string_list[4])
+                temp_y = int(string_list[5])
+                temp_username = string_list[6]
+                if temp_username == username:
+                    playerRadius = temp_radius
+                if temp_username != "None":
+                    pygame.draw.circle(surface, (temp_r, temp_g, temp_b), (temp_x, temp_y), int(temp_radius / 5))
+                    text = TINYFONT.render(str(temp_username), False, text_color)
+                    SCREEN.blit(text, (temp_x - 27.5, temp_y - 7.5))
+                else:
+                    pygame.draw.circle(surface, (temp_r, temp_g, temp_b), (temp_x, temp_y), int(temp_radius / 5))
+            except ValueError:
+                pass
 
 # FUNCTION THAT SENDS DATA TO THE SERVER
 def send_to_server(message):
+    global ping
     data = ""
+    start_time = time.perf_counter()
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         try:
             s.connect((HOST, PORT))
@@ -83,6 +102,7 @@ def send_to_server(message):
             return False
     if data.decode() == "GAME_OVER:" + str(username):
         return "GAME_OVER"
+    ping = round((time.perf_counter() - start_time) * 1000, 1)
     return str(data.decode())
 
 # GETTING READY TO CONNECT TO THE SERVER AND START THE GAME
@@ -135,6 +155,18 @@ while True:
     # DRAWING THE MASS TO THE SCREEN
     text = FONT.render("Mass: " + str(round(playerRadius, 1)), False, text_color)
     SCREEN.blit(text, (20, 20))
+    
+    # PUTTING THE PING ON THE SCREEN
+    text = TINYFONT.render("Ping: " + str(ping) + "ms", False, text_color)
+    SCREEN.blit(text, (20, 580))
+    
+    # PUTTING THE SERVER UPTIME ON THE SCREEN
+    text = TINYFONT.render("Server Uptime: " + str(server_uptime), False, text_color)
+    SCREEN.blit(text, (20, 600))
+    
+    # PUTTING THE SERVER ADDRESS ON THE SCREEN
+    text = TINYFONT.render("Server Address: " + str(HOST), False, text_color)
+    SCREEN.blit(text, (20, 620))
     
     # PUTTING THE AMOUNT OF DROPPED FRAMES ON THE SCREEN
     text = TINYFONT.render("Dropped Frames: " + str(droppedFrames), False, text_color)
