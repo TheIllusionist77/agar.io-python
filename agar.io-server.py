@@ -1,10 +1,12 @@
 # IMPORTING NECCESARY MODULES
 import socket, random, math, threading
+from datetime import datetime
 
-# GETTING HOST IP
+# STARTING SERVER
 n = socket.gethostname()
 ip = socket.gethostbyname(n)
 print("[SERVER] Server has opened successfully with address " + str(ip) + ".")
+start_time = datetime.now()
 
 # VARIABLES THAT CAN BE CHANGED
 PORT = 65432
@@ -53,13 +55,14 @@ class Cell():
                     cells.append(new_cell)
         for player in player_dict:
             player = player_dict[player]
-            if player.name == "Player" and player.username != self.username and math.sqrt((self.x_pos - player.x_pos) ** 2 + (self.y_pos - player.y_pos) ** 2) <= player.radius / 5 + self.radius / 5 and player.radius / 5 >= self.radius / 5 * 1.1:
+            if player.name == "Player" and player.username != self.username and math.sqrt((self.x_pos - player.x_pos) ** 2 + (self.y_pos - player.y_pos) ** 2) <= player.radius / 5 and player.radius / 5 >= self.radius / 5 * 1.1:
                 self.eaten = True
                 player_area = math.pi * (player.radius ** 2)
                 self_area = math.pi * (self.radius ** 2)
                 new_area = self_area + player_area
                 new_radius = math.sqrt(new_area / math.pi)
                 player.radius = new_radius
+                print("[PLAYERS] Player " + str(self.username) + " was eaten by " + str(player.username) + "!")
             
 # SPAWNING EVERY CELL
 for i in range(cell_count):
@@ -108,9 +111,9 @@ def Server():
                             else:
                                 x_change = int(data[0])
                                 if x_change > 700:
-                                    cell.x_pos += 1
+                                    cell.x_pos += max(125 / cell.radius, 1)
                                 elif x_change < 580:
-                                    cell.x_pos -= 1
+                                    cell.x_pos -= max(125 / cell.radius, 1)
                             if cell.y_pos >= 720:
                                 cell.y_pos -= 5
                             elif cell.y_pos <= 0:
@@ -118,27 +121,32 @@ def Server():
                             else:
                                 y_change = int(data[1])
                                 if y_change > 400:
-                                    cell.y_pos += 1
+                                    cell.y_pos += max(125 / cell.radius, 1)
                                 elif y_change < 320:
-                                    cell.y_pos -= 1
+                                    cell.y_pos -= max(125 / cell.radius, 1)
+                            cell.x_pos = round(cell.x_pos)
+                            cell.y_pos = round(cell.y_pos)
                 
                 # ADDING EVERY PLAYER TO THE SEND LIST
                 for key in keys:
                     try:
                         cell = player_dict[key]
                         if cell.radius > 25:
-                            cell.radius -= 0.0025
+                            cell.radius -= cell.radius / 25000
                         temp_string = str(str(cell.radius) + ":" + str(cell.color[0]) + ":" + str(cell.color[1]) + ":" + str(cell.color[2]) + ":" + str(cell.x_pos) + ":" + str(cell.y_pos) + ":" + str(cell.username) + ":")
-                        send_info += temp_string
-                        send_info += "/"
+                        send_info += temp_string + "/"
                     except:
                         pass
                 
                 # ADDING EVERY CELL TO THE SEND LIST
                 for cell in cells:
                     temp_string = str(str(cell.radius) + ":" + str(cell.color[0]) + ":" + str(cell.color[1]) + ":" + str(cell.color[2]) + ":" + str(cell.x_pos) + ":" + str(cell.y_pos) + ":None:")
-                    send_info += temp_string
-                    send_info += "/"
+                    send_info += temp_string + "/"
+                    
+                # ADDING RUN TIME TO THE SEND LIST
+                raw_time = datetime.now() - start_time
+                server_uptime = raw_time.total_seconds()
+                send_info += str(int(server_uptime)) + "-"
                 
                 # SENDING DATA
                 response = str(send_info)
@@ -149,5 +157,7 @@ def Server():
 while True:
     try:
         threading.Thread(target = Server()).start()
+    except KeyError:
+        pass
     except Exception as e:
-        print("[WARNING] Something special has occured: " + str(e))
+        print("[WARNING] Something special has occurred: " + str(e))
