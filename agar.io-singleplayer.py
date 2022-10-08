@@ -54,7 +54,7 @@ class Cell():
     
     # MAKES THE BOTS INTELLIGENT
     def intelligence(self):
-        global cells, bots, bot_pursuit_range
+        global cells, bots, bot_pursuit_range, closest_cell, cornering_range
         if self.wandering == True:
             smallest_distance = 4000
             for cell in cells:
@@ -76,8 +76,9 @@ class Cell():
                     self.pursuit = True
                     self.pursuiting = closest_bot
                 else:
+                    self.wandering = False
                     self.running = True
-                    self.chaser = closest_cell
+                    self.chaser = closest_bot
             
             if closest_cell.x_pos < self.x_pos:
                 self.x_pos -= 150 / self.radius
@@ -91,10 +92,11 @@ class Cell():
             
             player_distance = math.sqrt(((player_cell.x_pos - (WIDTH / 2) + self.x_pos) ** 2) + ((player_cell.y_pos - (HEIGHT / 2) + self.y_pos) ** 2))
             if player_distance <= self.radius + bot_pursuit_range * 0.75:
-                if player_cell.radius * 1.1 < self.radius:
-                    self.wandering = False
-                    self.pursuit = True
-                    self.pursuiting = "Player"
+                if player_cell.radius * 1.1 <= self.radius:
+                    if self.pursuiting == "None":
+                        self.wandering = False
+                        self.pursuit = True
+                        self.pursuiting = "Player"
                 else:
                     self.wandering = False
                     self.running = True
@@ -116,6 +118,20 @@ class Cell():
                     self.wandering = True
                     self.pursuit = False
                     self.pursuiting = "None"
+                    
+                smallest_bot_distance = 4000
+                for bot in bots:
+                    distance = math.sqrt(((bot.x_pos - self.x_pos) ** 2) + ((bot.y_pos - self.y_pos) ** 2))
+                    if distance <= smallest_bot_distance and bot != self:
+                        smallest_bot_distance = distance
+                        closest_bot = bot
+                
+                if smallest_bot_distance <= self.radius + bot_pursuit_range * 0.75:
+                    if closest_bot.radius >= self.radius * 1.1:
+                        self.pursuit = False
+                        self.pursuiting = "None"
+                        self.running = True
+                        self.chaser = closest_bot
             elif self.pursuiting != "None":
                 if self.pursuiting.x_pos < self.x_pos:
                     self.x_pos -= 150 / self.radius
@@ -132,6 +148,14 @@ class Cell():
                     self.wandering = True
                     self.pursuit = False
                     self.pursuiting = "None"
+                    
+                player_distance = math.sqrt(((player_cell.x_pos - (WIDTH / 2) + self.x_pos) ** 2) + ((player_cell.y_pos - (HEIGHT / 2) + self.y_pos) ** 2))
+                if player_distance <= self.radius + bot_pursuit_range * 0.75:
+                    if player_cell.radius <= self.radius * 1.1 and self.pursuiting == "None":
+                        self.pursuit = False
+                        self.pursuiting = "None"
+                        self.running = True
+                        self.chaser = "Player"
         elif self.running == True:
             if self.chaser == "Player":
                 if player_cell.x_pos < -(self.x_pos - (WIDTH / 2)):
@@ -160,7 +184,7 @@ class Cell():
                 else:
                     self.y_pos -= 150 / self.radius
                     
-                bot_distance = math.sqrt(((self.chaser.x_pos - (WIDTH / 2) + self.x_pos) ** 2) + ((self.chaser.y_pos - (HEIGHT / 2) + self.y_pos) ** 2))
+                bot_distance = math.sqrt(((self.chaser.x_pos - self.x_pos) ** 2) + ((self.chaser.y_pos - self.y_pos) ** 2))
                 if bot_distance >= self.radius + bot_pursuit_range * 1.1 or self.chaser.radius * 1.1 <= self.radius:
                     self.wandering = True
                     self.running = False
@@ -221,17 +245,25 @@ class Cell():
             text = FONT.render(str(round(self.radius)), False, text_color)
             SCREEN.blit(text, (x - 17.5, y - 12.5))
             if self.name == "Bot" and self.wandering == True:
-                text = TINYFONT.render("Wandering", False, text_color)
-                SCREEN.blit(text, (x - 45, y - 30))
+                text = TINYFONT.render("Collecting Mass", False, text_color)
+                SCREEN.blit(text, (x - 50, y - 30))
             elif self.name == "Bot" and self.pursuit == True:
-                text = TINYFONT.render("In Pursuit", False, text_color)
-                SCREEN.blit(text, (x - 40, y - 30))
+                if self.pursuiting == "Player":
+                    text = TINYFONT.render("In Pursuit Of You", False, text_color)
+                    SCREEN.blit(text, (x - 60, y - 30))
+                else:
+                    text = TINYFONT.render("In Pursuit Of A Bot", False, text_color)
+                    SCREEN.blit(text, (x - 60, y - 30))
             elif self.name == "Bot" and self.running == True:
-                text = TINYFONT.render("Running Away", False, text_color)
-                SCREEN.blit(text, (x - 52.5, y - 30))
+                if self.chaser == "Player":
+                    text = TINYFONT.render("Running Away From You", False, text_color)
+                    SCREEN.blit(text, (x - 82.5, y - 30))
+                else:
+                    text = TINYFONT.render("Running Away From A Bot", False, text_color)
+                    SCREEN.blit(text, (x - 82.5, y - 30))
             else:
                 text = TINYFONT.render("Player", False, text_color)
-                SCREEN.blit(text, (x - 17.5, y - 30))
+                SCREEN.blit(text, (x - 25, y - 30))
 
 # SPAWNS THE ORIGINAL CELLS, BOTS AND PLAYER
 for i in range(cell_count):
@@ -289,6 +321,7 @@ while True:
             bot.y_pos += 5
         if bot.radius > 25:
             bot.radius -= bot.radius / 25000
+            
         bot.intelligence()
         bot.draw(SCREEN, bot.x_pos + player_cell.x_pos, bot.y_pos + player_cell.y_pos)
     
